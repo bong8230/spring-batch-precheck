@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.bong8230.precheck.receive.ReceiveMapper">
+
+	<delete id="deleteReceived">
+		DELETE FROM received_tx
+		 WHERE file_code = #{fileCode}
+		   AND base_date = #{baseDate}
+	</delete>
+
+	<!-- MyBatisBatchItemWriter가 chunk 단위로 호출한다 -->
+	<insert id="insertReceived" parameterType="io.github.bong8230.precheck.receive.ReceivedTx">
+		INSERT INTO received_tx (file_code, base_date, account_no, amount)
+		VALUES (#{fileCode}, #{baseDate}, #{accountNo}, #{amount})
+	</insert>
+
+	<update id="mergeReceiveLog">
+		MERGE INTO file_receive_log (file_code, base_date, row_count, received_at)
+		KEY (file_code, base_date)
+		VALUES (#{fileCode}, #{baseDate}, #{rowCount}, CURRENT_TIMESTAMP)
+	</update>
+
+</mapper>

@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: spring-batch-precheck
+  main:
+    banner-mode: off
+  datasource:
+    # 실행 간 수신 이력이 유지되도록 파일 DB를 쓴다. (테스트는 메모리 DB)
+    url: jdbc:h2:file:./data/precheck;AUTO_SERVER=TRUE
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      # 실행할 Job은 --spring.batch.job.name 으로 지정한다.
+      enabled: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+precheck:
+  # 정산 Job을 시작하기 전에 같은 기준일자로 수신이 끝나 있어야 하는 파일 코드
+  required-files:
+    - PAY
+    - CANCEL

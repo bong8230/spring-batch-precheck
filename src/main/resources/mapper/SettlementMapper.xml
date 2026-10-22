@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.bong8230.precheck.settlement.SettlementMapper">
+
+	<select id="findReceivedFileCodes" resultType="string">
+		SELECT file_code
+		  FROM file_receive_log
+		 WHERE base_date = #{baseDate}
+	</select>
+
+	<delete id="deleteSettlement">
+		DELETE FROM daily_settlement
+		 WHERE base_date = #{baseDate}
+	</delete>
+
+	<!-- 입금(PAY)은 더하고 취소(CANCEL)는 빼서 계좌별 순입금액을 만든다 -->
+	<insert id="insertSettlement">
+		INSERT INTO daily_settlement (base_date, account_no, paid_amount, cancel_amount, net_amount, tx_count)
+		SELECT base_date,
+		       account_no,
+		       SUM(CASE WHEN file_code = 'PAY'    THEN amount ELSE 0 END),
+		       SUM(CASE WHEN file_code = 'CANCEL' THEN amount ELSE 0 END),
+		       SUM(CASE WHEN file_code = 'PAY'    THEN amount ELSE -amount END),
+		       COUNT(*)
+		  FROM received_tx
+		 WHERE base_date = #{baseDate}
+		 GROUP BY base_date, account_no
+	</insert>
+
+</mapper>
