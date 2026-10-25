@@ -2,8 +2,11 @@
 
 외부 기관에서 받은 파일을 적재하고, **선행 파일이 모두 수신됐는지 먼저 검증한 뒤** 일별 정산을 실행하는 Spring Batch 예제입니다.
 
-> 실무에서 수작업으로 돌리던 배치 19종을 Spring Batch Job으로 옮기며 쓴 설계(선행 파일 검증, 실패 사유 기록, 재실행, 외부 스케줄러 연계)를
+> 실무에서 수작업으로 돌리던 배치 19종을 Spring Batch Job으로 옮기며 쓴 설계(기준일자 검증, 선행 파일 검증, 실패 사유 기록, 외부 스케줄러 연계)를
 > **가상 데이터로 처음부터 다시 구현한 공개용 예제**입니다. 회사 코드, 테이블, 업무 규칙은 포함하지 않습니다.
+>
+> 실무 Job은 Tasklet에서 MyBatis로 프로시저·SQL을 호출하는 구조이며, 재시작 로직은 없습니다.
+> 아래 표에서 **예제 확장**으로 표시한 항목(재시작, chunk 적재)은 이 예제에서 추가로 구현한 부분입니다.
 
 ![ci](https://github.com/bong8230/spring-batch-precheck/actions/workflows/ci.yml/badge.svg)
 
@@ -27,14 +30,14 @@ receiveFileJob (파일마다 1회)              dailySettlementJob (기준일자
                                           └──────────────────────────────────┘
 ```
 
-| 설계 포인트 | 구현 |
-| --- | --- |
-| 잘못된 기준일자 차단 | `BaseDateValidator`가 `yyyyMMdd` 실제 날짜인지 Job 시작 전에 검사 |
-| 선행 파일 검증 | `RequiredFilePrecheckTasklet`이 수신 이력과 `precheck.required-files`를 비교, 빠진 파일 목록을 실패 사유로 남김 |
-| 재시작 | 파일이 들어온 뒤 같은 `baseDate`로 다시 실행하면 **같은 JobInstance**가 실패한 Step부터 재시작 |
-| 재실행 안전 | 수신은 이전 적재분 삭제 후 적재, 정산은 삭제 후 재집계라 몇 번 돌려도 결과가 같음 |
-| 대량 적재 | `FlatFileItemReader` → `ItemProcessor`(값 검증) → `MyBatisBatchItemWriter`, chunk 100건 |
-| 외부 스케줄러 연계 | Job 결과를 프로세스 종료 코드로 반환해 JobPass·cron 등이 성공/실패를 판단 |
+| 설계 포인트 | 구분 | 구현 |
+| --- | --- | --- |
+| 잘못된 기준일자 차단 | 실무 설계 | `BaseDateValidator`가 `yyyyMMdd` 실제 날짜인지 Job 시작 전에 검사 |
+| 선행 파일 검증 | 실무 설계 | `RequiredFilePrecheckTasklet`이 수신 이력과 `precheck.required-files`를 비교, 빠진 파일 목록을 실패 사유로 남김 |
+| 외부 스케줄러 연계 | 실무 설계 | Job 결과를 프로세스 종료 코드로 반환해 JobPass·cron 등이 성공/실패를 판단 |
+| 재시작 | 예제 확장 | 파일이 들어온 뒤 같은 `baseDate`로 다시 실행하면 **같은 JobInstance**가 실패한 Step부터 재시작 |
+| 재실행 안전 | 예제 확장 | 수신은 이전 적재분 삭제 후 적재, 정산은 삭제 후 재집계라 몇 번 돌려도 결과가 같음 |
+| 대량 적재 | 예제 확장 | `FlatFileItemReader` → `ItemProcessor`(값 검증) → `MyBatisBatchItemWriter`, chunk 100건 |
 
 ## 실행
 
